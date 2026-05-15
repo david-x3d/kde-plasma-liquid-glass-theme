@@ -1,0 +1,232 @@
+/**
+ * @name midnight liquid transparent
+ * @description midnight theme, aber Discord/Vesktop mit transparentem Glas-Fenster
+ * @author refact0r + edited
+ * @version 2.1.1-liquid
+ */
+
+@import url('https://refact0r.github.io/midnight-discord/build/midnight.css');
+
+body {
+    /* font */
+    --font: 'figtree';
+    --code-font: '';
+    font-weight: 400;
+
+    /* layout */
+    --gap: 12px;
+    --divider-thickness: 4px;
+    --border-thickness: 1px;
+
+    /* animations */
+    --animations: on;
+    --list-item-transition: 0.2s ease;
+    --dms-icon-svg-transition: 0.4s ease;
+    --border-hover-transition: 0.2s ease;
+
+    /* top bar */
+    --top-bar-height: var(--gap);
+    --top-bar-button-position: titlebar;
+    --top-bar-title-position: off;
+    --subtle-top-bar-title: off;
+
+    /* window controls */
+    --custom-window-controls: on;
+    --window-control-size: 14px;
+
+    /* dms icon */
+    --custom-dms-icon: custom;
+    --dms-icon-svg-url: url('https://refact0r.github.io/midnight-discord/assets/Font_Awesome_5_solid_moon.svg');
+    --dms-icon-svg-size: 90%;
+    --dms-icon-color-before: var(--icon-subtle);
+    --dms-icon-color-after: var(--white);
+    --custom-dms-background: off;
+    --dms-background-image-url: url('');
+    --dms-background-image-size: cover;
+    --dms-background-color: linear-gradient(70deg, var(--blue-2), var(--purple-2), var(--red-2));
+
+    /* important: no fake background image */
+    --background-image: off;
+    --background-image-url: url('');
+
+    /* liquid glass */
+    --transparency-tweaks: on;
+    --remove-bg-layer: on;
+    --panel-blur: on;
+    --blur-amount: 22px;
+    --bg-floating: hsla(220, 15%, 8%, 0.72);
+
+    /* chatbar */
+    --custom-chatbar: separated;
+    --chatbar-height: 56px;
+
+    --small-user-panel: on;
+}
+
+/* colors */
+:root {
+    --colors: on;
+
+    /* text */
+    --text-0: hsl(220, 45%, 98%);
+    --text-1: hsl(220, 45%, 95%);
+    --text-2: hsl(220, 25%, 78%);
+    --text-3: hsl(220, 20%, 68%);
+    --text-4: hsl(220, 15%, 52%);
+    --text-5: hsl(220, 15%, 36%);
+
+    /* glass backgrounds */
+    --bg-1: hsla(220, 15%, 22%, 0.46);
+    --bg-2: hsla(220, 15%, 17%, 0.38);
+    --bg-3: hsla(220, 15%, 12%, 0.24);
+    --bg-4: hsla(220, 15%, 8%, 0.10);
+
+    --hover: hsla(220, 25%, 80%, 0.08);
+    --active: hsla(220, 25%, 80%, 0.14);
+    --active-2: hsla(220, 25%, 80%, 0.20);
+    --message-hover: hsla(220, 0%, 0%, 0.14);
+
+    /* accents */
+    --accent-1: var(--blue-1);
+    --accent-2: var(--blue-2);
+    --accent-3: var(--blue-3);
+    --accent-4: var(--blue-4);
+    --accent-5: var(--blue-5);
+    --accent-new: var(--accent-2);
+
+    --mention: linear-gradient(to right, color-mix(in hsl, var(--accent-2), transparent 86%) 40%, transparent);
+    --mention-hover: linear-gradient(to right, color-mix(in hsl, var(--accent-2), transparent 92%) 40%, transparent);
+    --reply: linear-gradient(to right, color-mix(in hsl, var(--text-3), transparent 88%) 40%, transparent);
+    --reply-hover: linear-gradient(to right, color-mix(in hsl, var(--text-3), transparent 94%) 40%, transparent);
+
+    /* status */
+    --online: var(--green-2);
+    --dnd: var(--red-2);
+    --idle: var(--yellow-2);
+    --streaming: var(--purple-2);
+    --offline: var(--text-4);
+
+    /* borders */
+    --border-light: hsla(220, 30%, 90%, 0.06);
+    --border: hsla(220, 30%, 90%, 0.12);
+    --border-hover: hsla(220, 30%, 90%, 0.22);
+    --button-border: hsla(220, 0%, 100%, 0.10);
+
+    /* base colors */
+    --red-1: oklch(75% 0.12 0);
+    --red-2: oklch(70% 0.12 0);
+    --red-3: oklch(65% 0.12 0);
+    --red-4: oklch(60% 0.12 0);
+    --red-5: oklch(55% 0.12 0);
+
+    --green-1: oklch(75% 0.11 170);
+    --green-2: oklch(70% 0.11 170);
+    --green-3: oklch(65% 0.11 170);
+    --green-4: oklch(60% 0.11 170);
+    --green-5: oklch(55% 0.11 160);
+
+    --blue-1: oklch(80% 0.12 215);
+    --blue-2: oklch(74% 0.12 215);
+    --blue-3: oklch(68% 0.12 215);
+    --blue-4: oklch(62% 0.12 215);
+    --blue-5: oklch(56% 0.12 215);
+
+    --yellow-1: oklch(80% 0.11 90);
+    --yellow-2: oklch(75% 0.11 90);
+    --yellow-3: oklch(70% 0.11 90);
+    --yellow-4: oklch(65% 0.11 90);
+    --yellow-5: oklch(60% 0.11 90);
+
+    --purple-1: oklch(78% 0.13 310);
+    --purple-2: oklch(72% 0.13 310);
+    --purple-3: oklch(66% 0.13 310);
+    --purple-4: oklch(60% 0.13 310);
+    --purple-5: oklch(54% 0.13 310);
+
+    /* Discord internal vars transparent machen */
+    --background-primary: transparent !important;
+    --background-secondary: transparent !important;
+    --background-secondary-alt: transparent !important;
+    --background-tertiary: transparent !important;
+    --background-accent: transparent !important;
+    --background-floating: hsla(220, 15%, 8%, 0.72) !important;
+    --chat-background-default: transparent !important;
+    --channeltextarea-background: hsla(220, 15%, 10%, 0.35) !important;
+}
+
+/* komplette App-Basis transparent */
+html,
+body,
+#app-mount,
+[class*="appMount"],
+[class*="app_"],
+[class*="bg_"],
+[class*="layers_"],
+[class*="layer_"],
+[class*="base_"] {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* Discord Hauptflächen transparent */
+[class*="chat_"],
+[class*="chatContent_"],
+[class*="container_"],
+[class*="content_"],
+[class*="sidebar_"],
+[class*="members_"],
+[class*="membersWrap_"],
+[class*="guilds_"],
+[class*="scroller_"],
+[class*="privateChannels_"],
+[class*="panels_"],
+[class*="standardSidebarView_"],
+[class*="contentRegion_"],
+[class*="sidebarRegion_"] {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* Glas-Panels */
+[class*="sidebar_"],
+[class*="membersWrap_"],
+[class*="panels_"],
+[class*="container_"][class*="themed_"],
+[class*="channelTextArea_"],
+[class*="chatContent_"] {
+    background-color: hsla(220, 15%, 9%, 0.26) !important;
+    backdrop-filter: blur(var(--blur-amount)) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(var(--blur-amount)) saturate(140%) !important;
+    border: 1px solid hsla(220, 30%, 90%, 0.10) !important;
+}
+
+/* Nachrichtenbereich etwas lesbarer */
+[class*="messageListItem_"],
+[class*="message_"] {
+    background: transparent !important;
+}
+
+/* Popups/Menus glasig, aber lesbar */
+[class*="menu_"],
+[class*="popout_"],
+[class*="modal_"],
+[class*="root_"][role="dialog"] {
+    background-color: hsla(220, 15%, 8%, 0.78) !important;
+    backdrop-filter: blur(26px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(150%) !important;
+    border: 1px solid hsla(220, 30%, 90%, 0.14) !important;
+}
+
+/* Chat input */
+[class*="channelTextArea_"],
+[class*="scrollableContainer_"] {
+    background-color: hsla(220, 15%, 10%, 0.35) !important;
+    backdrop-filter: blur(18px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+}
+
+/* kleine schwarze Reste killen */
+[class*="children_"]::after,
+[class*="form_"]::before {
+    display: none !important;
+}
