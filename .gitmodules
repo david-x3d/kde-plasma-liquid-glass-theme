@@ -1,0 +1,18 @@
+[submodule "upstream/Darkly"]
+	path = upstream/Darkly
+	url = https://github.com/Bali10050/Darkly.git
+[submodule "upstream/BreezeEnhanced"]
+	path = upstream/BreezeEnhanced
+	url = https://github.com/tsujan/BreezeEnhanced.git
+[submodule "upstream/WhiteSur-icon-theme"]
+	path = upstream/WhiteSur-icon-theme
+	url = https://github.com/vinceliuice/WhiteSur-icon-theme.git
+[submodule "upstream/Better-Blur-DX"]
+	path = upstream/Better-Blur-DX
+	url = https://github.com/xarblu/kwin-effects-better-blur-dx.git
+[submodule "upstream/KDE-Rounded-Corners"]
+	path = upstream/KDE-Rounded-Corners
+	url = https://github.com/matinlotfali/KDE-Rounded-Corners.git
+[submodule "upstream/Layan-kde"]
+	path = upstream/Layan-kde
+	url = https://github.com/vinceliuice/Layan-kde.git
