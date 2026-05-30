@@ -31,5 +31,6 @@ jobs:
           test -d screenshots
           test -d themes
           test -x scripts/install.sh
-          scripts/install.sh --dry-run
+          test -x scripts/validate-installer.sh
+          scripts/validate-installer.sh
           git config --file .gitmodules --get-regexp path
