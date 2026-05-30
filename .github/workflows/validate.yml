@@ -30,4 +30,6 @@ jobs:
           test -f .gitmodules
           test -d screenshots
           test -d themes
+          test -x scripts/install.sh
+          scripts/install.sh --dry-run
           git config --file .gitmodules --get-regexp path

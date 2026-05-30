@@ -52,9 +52,25 @@ If you already cloned without submodules:
 git submodule update --init --recursive
 ```
 
+Preview the modified Layan overlay installer:
+
+```bash
+scripts/install.sh --dry-run
+```
+
+Install the overlay after reviewing the planned file actions:
+
+```bash
+scripts/install.sh --install
+```
+
+The installer copies `themes/modified-layan/` into your local Plasma desktop theme directory, backs up any replaced files, and prints the backup location when it changes existing files.
+
 ## 💎 Modified Layan Plasma Theme
 
-Install the normal Layan Plasma theme first, then overlay the modified files from this repo:
+Install the normal Layan Plasma theme first, then use the installer above to overlay the modified files from this repo.
+
+If you prefer to copy the files manually:
 
 ```bash
 mkdir -p ~/.local/share/plasma/desktoptheme/Layan
@@ -135,6 +151,7 @@ Bright wallpapers can make translucent UI text harder to read.
 | Path | Purpose |
 | --- | --- |
 | `screenshots/` | Desktop and settings screenshots |
+| `scripts/install.sh` | Dry-run capable modified Layan installer |
 | `themes/modified-layan/` | Local Layan override files |
 | `themes/discord-theme/` | Modified Discord/Vesktop CSS |
 | `.gitmodules` | Linked upstream theme/tool repositories |
@@ -159,6 +176,8 @@ test -f LICENSE
 test -f .gitmodules
 test -d screenshots
 test -d themes
+test -x scripts/install.sh
+scripts/install.sh --dry-run
 git config --file .gitmodules --get-regexp path
 ```
 
@@ -168,13 +187,6 @@ git config --file .gitmodules --get-regexp path
 - Plasma theme internals can change between KDE versions.
 - Keep backups of your current KDE settings before replacing theme files.
 - Transparent desktop setups depend heavily on wallpaper contrast, panel opacity and blur configuration.
-
-## 🗺 Roadmap
-
-- Add a scripted installer with a dry-run mode.
-- Add rollback instructions for every copied theme file.
-- Add a KDE version compatibility matrix.
-- Add more desktop and panel screenshots.
 
 ## Contributing
 
