@@ -189,6 +189,11 @@ assert_contains "${full_output}" "kwin-dev"
 "${REPO_ROOT}/scripts/install.sh" --dry-run --distro arch --skip-settings --skip-discord-theme --skip-builds >"${full_output}"
 assert_contains "${full_output}" "Build/install:     0"
 
+if "${REPO_ROOT}/scripts/install.sh" --distro alpine --check-packages >/dev/null 2>&1; then
+  printf 'Expected --check-packages to fail without a supported package manager\n' >&2
+  exit 1
+fi
+
 if "${REPO_ROOT}/scripts/install.sh" --dry-run --distro nonsense >/dev/null 2>&1; then
   printf 'Expected --distro nonsense to fail\n' >&2
   exit 1

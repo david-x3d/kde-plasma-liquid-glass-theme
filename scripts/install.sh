@@ -34,6 +34,7 @@ if [[ -n "${LIQUID_GLASS_OS_RELEASE:-}" ]]; then
 fi
 SESSION_TYPE=""
 PRINT_PACKAGES=0
+CHECK_PACKAGES=0
 ALLOW_ROOT=0
 PREFIX_EXPLICIT=0
 PREFIX_AUTO_USER=0
@@ -121,6 +122,8 @@ Options:
       --wayland              Build KWin effects for a KWin Wayland session (default: auto-detect)
       --build-root DIR       Out-of-tree CMake build directory (default: <repo>/.build)
       --print-packages       Print the build dependency list for this distro and exit
+      --check-packages       Check that every dependency exists in this system's configured
+                            repositories (installs nothing; exits 1 if any are missing)
       --allow-root           Allow running the installer directly as root
       --theme-name NAME     Plasma theme folder to write into (default: Layan)
       --plasma-style NAME    Plasma style name written to plasmarc (default: Layan)
@@ -295,6 +298,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --print-packages)
       PRINT_PACKAGES=1
+      shift
+      ;;
+    --check-packages)
+      CHECK_PACKAGES=1
       shift
       ;;
     --allow-root)
@@ -774,6 +781,20 @@ filter_available_packages() {
           MISSING_PACKAGES+=("${pkg}")
         fi
         ;;
+      dnf)
+        if [[ -n "$(dnf -q repoquery --available --whatprovides "${pkg}" 2>/dev/null | head -n 1)" ]]; then
+          AVAILABLE_PACKAGES+=("${pkg}")
+        else
+          MISSING_PACKAGES+=("${pkg}")
+        fi
+        ;;
+      zypper)
+        if zypper --non-interactive --quiet search --match-exact --provides "${pkg}" >/dev/null 2>&1; then
+          AVAILABLE_PACKAGES+=("${pkg}")
+        else
+          MISSING_PACKAGES+=("${pkg}")
+        fi
+        ;;
       *)
         AVAILABLE_PACKAGES+=("${pkg}")
         ;;
@@ -982,6 +1003,32 @@ check_run_as_root() {
     fail "do not run this installer with sudo: user settings would be written to root's home. Run it as your normal user (it uses sudo only for system-wide steps), or pass --allow-root."
   fi
   note "Warning: running as root; KDE settings and theme files will be written to ${HOME}."
+}
+
+# Verifies every dependency resolves in the configured repositories without
+# installing anything. Used by CI to catch package-name drift per distro.
+check_packages() {
+  local manager
+  local packages=()
+
+  if ! manager="$(package_manager_for_family)"; then
+    printf 'Error: --check-packages needs a supported package manager (family: %s).\n' "${DISTRO_FAMILY}" >&2
+    return 2
+  fi
+  if ! have "${manager}"; then
+    printf 'Error: %s not found on PATH.\n' "${manager}" >&2
+    return 2
+  fi
+
+  read -r -a packages <<<"$(package_list)"
+  filter_available_packages "${manager}" "${packages[@]}"
+  printf 'Checked %s packages with %s (%s, %s build target).\n' "${#packages[@]}" "${manager}" "${DISTRO_FAMILY}" "${SESSION_TYPE}"
+  if [[ ${#MISSING_PACKAGES[@]} -gt 0 ]]; then
+    printf 'Missing from the configured repositories:\n' >&2
+    printf '  %s\n' "${MISSING_PACKAGES[@]}" >&2
+    return 1
+  fi
+  printf 'All packages are available.\n'
 }
 
 print_header() {
@@ -2000,6 +2047,11 @@ apply_environment_policy
 
 if [[ ${PRINT_PACKAGES} -eq 1 ]]; then
   print_packages
+  exit $?
+fi
+
+if [[ ${CHECK_PACKAGES} -eq 1 ]]; then
+  check_packages
   exit $?
 fi
 

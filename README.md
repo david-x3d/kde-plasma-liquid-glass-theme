@@ -112,6 +112,7 @@ Useful switches:
 | `--install-packages` | Installs known build/runtime packages on pacman, apt, dnf or zypper systems. |
 | `--distro NAME` | Overrides distro detection (`arch`, `debian`, `fedora`, `suse`, `nixos`, `alpine`, `void`, `gentoo`). |
 | `--print-packages` | Prints the build dependency list for the detected or chosen distro and exits. |
+| `--check-packages` | Checks that every build dependency exists in your configured repositories without installing anything (used by CI). |
 | `--x11` / `--wayland` | Chooses which KWin the effects are built for (default: from `XDG_SESSION_TYPE`). |
 | `--build-root DIR` | Out-of-tree CMake build directory (default: `.build/`). |
 | `--allow-root` | Allows running directly as root (for containers). |
@@ -225,6 +226,7 @@ Bright wallpapers can make translucent UI text harder to read.
 GitHub Actions validates the repo on Ubuntu, Windows and macOS for:
 
 - installer syntax, dry-runs for Arch, Debian, Fedora, openSUSE, NixOS and immutable systems
+- inside Arch, Debian sid, Fedora and openSUSE Tumbleweed containers: the installer tests, a check that every build dependency exists in the distro's repositories (`--check-packages`), and a full `--full-setup` build of Darkly, BreezeEnhanced, Better Blur DX and KDE Rounded Corners
 - `README.md`
 - `LICENSE`
 - `.gitmodules`
