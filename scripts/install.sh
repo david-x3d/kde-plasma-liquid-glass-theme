@@ -767,7 +767,7 @@ filter_available_packages() {
   for pkg in "$@"; do
     case "${manager}" in
       apt-get)
-        candidate="$(apt-cache policy "${pkg}" 2>/dev/null | awk '/Candidate:/ {print $2; exit}')"
+        candidate="$(apt-cache policy "${pkg}" 2>/dev/null | awk '/Candidate:/ {print $2}' || true)"
         if [[ -n "${candidate}" && "${candidate}" != "(none)" ]]; then
           AVAILABLE_PACKAGES+=("${pkg}")
         else
@@ -1897,6 +1897,18 @@ verify_value() {
   fi
 }
 
+# True when two files have identical contents. Minimal containers lack cmp
+# (diffutils), so fall back to diff and then to checksums.
+files_identical() {
+  if have cmp; then
+    cmp -s -- "$1" "$2"
+  elif have diff; then
+    diff -q -- "$1" "$2" >/dev/null 2>&1
+  else
+    [[ "$(cksum <"$1")" == "$(cksum <"$2")" ]]
+  fi
+}
+
 verify_file_match() {
   local source="$1"
   local dest="$2"
@@ -1905,7 +1917,7 @@ verify_file_match() {
     printf 'Verification warning: missing installed file %s\n' "${dest}" >&2
     return 1
   fi
-  if ! cmp -s -- "${source}" "${dest}"; then
+  if ! files_identical "${source}" "${dest}"; then
     printf 'Verification warning: installed file differs from source: %s\n' "${dest}" >&2
     return 1
   fi

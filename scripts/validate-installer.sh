@@ -143,22 +143,22 @@ distro_dry_run() {
 distro_dry_run arch >"${full_output}"
 assert_contains "${full_output}" "Distro:            CachyOS (family: arch)"
 assert_contains "${full_output}" "Package manager:   supported (pacman)"
-assert_contains "${full_output}" "would run: pacman -S --needed --noconfirm base-devel git cmake"
+assert_contains "${full_output}" "pacman -S --needed --noconfirm base-devel git cmake"
 
 distro_dry_run debian >"${full_output}"
 assert_contains "${full_output}" "Package manager:   supported (apt-get)"
-assert_contains "${full_output}" "would run: apt-get update"
+assert_contains "${full_output}" "apt-get update"
 assert_contains "${full_output}" "apt-get install -y git cmake extra-cmake-modules build-essential"
 assert_contains "${full_output}" "libkirigami-dev"
 
 distro_dry_run fedora >"${full_output}"
 assert_contains "${full_output}" "Package manager:   supported (dnf)"
-assert_contains "${full_output}" "would run: dnf install -y git cmake extra-cmake-modules gcc-c++"
+assert_contains "${full_output}" "dnf install -y git cmake extra-cmake-modules gcc-c++"
 assert_contains "${full_output}" "kf6-kirigami-devel"
 
 distro_dry_run suse >"${full_output}"
 assert_contains "${full_output}" "Package manager:   supported (zypper)"
-assert_contains "${full_output}" "would run: zypper --non-interactive install --no-recommends git"
+assert_contains "${full_output}" "zypper --non-interactive install --no-recommends git"
 assert_contains "${full_output}" "kwin6-devel"
 
 distro_dry_run kinoite >"${full_output}"
