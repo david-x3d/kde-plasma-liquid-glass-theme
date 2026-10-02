@@ -91,6 +91,7 @@ The installer reads `/etc/os-release` (including `ID_LIKE`, so derivatives work)
 Things worth knowing:
 
 - Run it as your normal user, not with `sudo`. It calls `sudo` (or `doas`) itself, only for package and system-prefix steps.
+- Better Blur DX follows KWin's internal API and officially supports Plasma 6.5-6.6; against newer KWin releases it may not compile yet. The installer then keeps KWin's built-in blur enabled instead.
 - Each component builds independently. If one fails (for example BreezeEnhanced and Better Blur DX need Plasma 6.5+), the others still install, the settings fall back to what is actually available (native blur, Darkly or Breeze decorations), and the script exits with status 2 and a summary.
 - KWin effects are tied to the exact KWin version they were built against. Re-run `scripts/install.sh --install` after a Plasma upgrade.
 - On an X11 session the effects are built for KWin X11 automatically; force it with `--x11` or `--wayland`.
