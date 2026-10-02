@@ -91,6 +91,7 @@ assert_contains "${full_output}" "would run: git -C ${REPO_ROOT} submodule updat
 assert_contains_any "${full_output}" "install.sh after submodule init" "Layan KDE:         install.sh"
 assert_contains_any "${full_output}" "cmake configure/build/install after submodule init" "Darkly:            cmake configure/build/install"
 assert_contains "${full_output}" "would run: cmake -S ${REPO_ROOT}/Darkly"
+assert_contains "${full_output}" "-DBUILD_QT5=OFF -DBUILD_QT6=ON"
 assert_contains "${full_output}" "KDE config backup"
 assert_contains "${full_output}" "would run: kwriteconfig"
 assert_contains "${full_output}" "--group Plugins --key better_blur_dxEnabled true"
@@ -108,6 +109,96 @@ assert_contains "${full_output}" "would copy: ${REPO_ROOT}/themes/discord-theme/
 assert_contains "${full_output}" "would verify KDE config values and installed optional theme files"
 assert_contains "${full_output}" "Discord theme:     1"
 
+# Distro detection, package tables and special cases, driven by fake os-release files.
+distro_dir="$(mktemp -d)"
+trap 'rm -f "${full_output}" "${full_setup_output}" "${overlay_output}" "${install_output}"; rm -rf "${tmp_home}" "${tmp_target}" "${tmp_backup}" "${distro_dir}"' EXIT
+
+write_os_release() {
+  printf '%s\n' "$2" >"${distro_dir}/$1"
+}
+write_os_release arch 'ID=cachyos
+ID_LIKE=arch
+PRETTY_NAME="CachyOS"'
+write_os_release debian 'ID=neon
+ID_LIKE="ubuntu debian"
+PRETTY_NAME="KDE neon"'
+write_os_release fedora 'ID=nobara
+ID_LIKE="rhel centos fedora"
+PRETTY_NAME="Nobara"'
+write_os_release kinoite 'ID=fedora
+VARIANT_ID=kinoite
+PRETTY_NAME="Fedora Kinoite"'
+write_os_release suse 'ID="opensuse-tumbleweed"
+ID_LIKE="opensuse suse"
+PRETTY_NAME="openSUSE Tumbleweed"'
+write_os_release nixos 'ID=nixos
+PRETTY_NAME="NixOS"'
+write_os_release alpine 'ID=alpine
+PRETTY_NAME="Alpine Linux"'
+
+distro_dry_run() {
+  LIQUID_GLASS_OS_RELEASE="${distro_dir}/$1" "${REPO_ROOT}/scripts/install.sh" --dry-run --full-setup --yes --skip-plasma-restart --skip-discord-theme
+}
+
+distro_dry_run arch >"${full_output}"
+assert_contains "${full_output}" "Distro:            CachyOS (family: arch)"
+assert_contains "${full_output}" "Package manager:   supported (pacman)"
+assert_contains "${full_output}" "would run: pacman -S --needed --noconfirm base-devel git cmake"
+
+distro_dry_run debian >"${full_output}"
+assert_contains "${full_output}" "Package manager:   supported (apt-get)"
+assert_contains "${full_output}" "would run: apt-get update"
+assert_contains "${full_output}" "apt-get install -y git cmake extra-cmake-modules build-essential"
+assert_contains "${full_output}" "libkirigami-dev"
+
+distro_dry_run fedora >"${full_output}"
+assert_contains "${full_output}" "Package manager:   supported (dnf)"
+assert_contains "${full_output}" "would run: dnf install -y git cmake extra-cmake-modules gcc-c++"
+assert_contains "${full_output}" "kf6-kirigami-devel"
+
+distro_dry_run suse >"${full_output}"
+assert_contains "${full_output}" "Package manager:   supported (zypper)"
+assert_contains "${full_output}" "would run: zypper --non-interactive install --no-recommends git"
+assert_contains "${full_output}" "kwin6-devel"
+
+distro_dry_run kinoite >"${full_output}"
+assert_contains "${full_output}" "System image:      immutable/declarative"
+assert_contains "${full_output}" "Install prefix:    ${HOME}/.local"
+assert_contains "${full_output}" "toolbox/distrobox"
+assert_contains "${full_output}" "plasma-workspace/env/liquid-glass.sh"
+
+distro_dry_run nixos >"${full_output}"
+assert_contains "${full_output}" "Distro:            NixOS (family: nixos)"
+assert_contains "${full_output}" "disabled on NixOS"
+assert_contains "${full_output}" "kde-rounded-corners"
+assert_contains "${full_output}" "kwin-effects-better-blur-dx"
+assert_contains "${full_output}" "--key library org.kde.darkly"
+if grep -F -- "cmake -S" "${full_output}" >/dev/null; then
+  printf 'NixOS dry-run must not plan cmake builds\n' >&2
+  exit 1
+fi
+
+distro_dry_run alpine >"${full_output}"
+assert_contains "${full_output}" "Package manager:   unsupported"
+
+"${REPO_ROOT}/scripts/install.sh" --distro fedora --x11 --print-packages >"${full_output}"
+assert_contains "${full_output}" "kwin-x11-devel"
+"${REPO_ROOT}/scripts/install.sh" --distro debian --print-packages >"${full_output}"
+assert_contains "${full_output}" "kwin-dev"
+
+"${REPO_ROOT}/scripts/install.sh" --dry-run --distro arch --skip-settings --skip-discord-theme --skip-builds >"${full_output}"
+assert_contains "${full_output}" "Build/install:     0"
+
+if "${REPO_ROOT}/scripts/install.sh" --distro alpine --check-packages >/dev/null 2>&1; then
+  printf 'Expected --check-packages to fail without a supported package manager\n' >&2
+  exit 1
+fi
+
+if "${REPO_ROOT}/scripts/install.sh" --dry-run --distro nonsense >/dev/null 2>&1; then
+  printf 'Expected --distro nonsense to fail\n' >&2
+  exit 1
+fi
+
 "${REPO_ROOT}/scripts/install.sh" --dry-run --overlay-only >"${overlay_output}"
 assert_contains "${overlay_output}" "Build/install:     0"
 assert_contains "${overlay_output}" "Apply settings:    0"
@@ -117,7 +208,7 @@ assert_contains "${overlay_output}" "Discord theme:     0"
 assert_contains "${overlay_output}" "Window rules:      0"
 assert_contains "${overlay_output}" "Restart Plasma:    0"
 
-HOME="${tmp_home}" "${REPO_ROOT}/scripts/install.sh" \
+HOME="${tmp_home}" XDG_CONFIG_HOME="${tmp_home}/.config" XDG_DATA_HOME="${tmp_home}/.local/share" "${REPO_ROOT}/scripts/install.sh" \
   --install \
   --yes \
   --skip-builds \

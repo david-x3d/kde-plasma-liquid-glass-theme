@@ -34,3 +34,109 @@ jobs:
           test -x scripts/validate-installer.sh
           scripts/validate-installer.sh
           git config --file .gitmodules --get-regexp path
+
+  distros:
+    name: Packages (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Arch Linux
+            image: archlinux:latest
+            family: arch
+            prepare: pacman -Syu --noconfirm git gawk grep sed findutils which
+          - name: Debian sid
+            image: debian:sid
+            family: debian
+            prepare: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git gawk grep sed findutils
+          - name: Fedora
+            image: fedora:latest
+            family: fedora
+            prepare: dnf install -y git gawk grep sed findutils
+          - name: openSUSE Tumbleweed
+            image: opensuse/tumbleweed:latest
+            family: suse
+            prepare: zypper --non-interactive install git gawk grep sed findutils tar gzip
+    steps:
+      - name: Install base tools
+        run: ${{ matrix.prepare }}
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Trust workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Refresh package metadata
+        shell: bash
+        run: |
+          case "${{ matrix.family }}" in
+            arch) pacman -Sy --noconfirm ;;
+            debian) apt-get update ;;
+            fedora) dnf makecache ;;
+            suse) zypper --non-interactive refresh ;;
+          esac
+      - name: Detect distro family
+        shell: bash
+        run: |
+          scripts/install.sh --dry-run | tee dry-run.log
+          grep -F "(family: ${{ matrix.family }})" dry-run.log
+      - name: Run installer validation
+        shell: bash
+        run: scripts/validate-installer.sh
+      - name: Check build dependencies exist in the repositories
+        shell: bash
+        run: scripts/install.sh --check-packages
+
+  build:
+    name: Build (${{ matrix.name }})
+    needs: distros
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    timeout-minutes: 60
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Arch Linux
+            image: archlinux:latest
+            prepare: pacman -Syu --noconfirm git gawk grep sed findutils which
+          - name: Debian sid
+            image: debian:sid
+            prepare: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git gawk grep sed findutils
+          - name: Fedora
+            image: fedora:latest
+            prepare: dnf install -y git gawk grep sed findutils
+          - name: openSUSE Tumbleweed
+            image: opensuse/tumbleweed:latest
+            prepare: zypper --non-interactive install git gawk grep sed findutils tar gzip
+    steps:
+      - name: Install base tools
+        run: ${{ matrix.prepare }}
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Trust workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install everything (packages, submodules, builds)
+        shell: bash
+        run: |
+          scripts/install.sh --full-setup --yes --skip-layout --skip-discord-theme --skip-plasma-restart | tee install.log
+      - name: Check component summary
+        shell: bash
+        run: |
+          grep -F "Installed:" install.log
+          if grep -E "^Failed:|^Skipped:" install.log; then
+            echo "A component failed or was skipped on this distro" >&2
+            exit 1
+          fi
+      - name: Check installed plugins
+        shell: bash
+        run: |
+          for pattern in '*better_blur_dx*.so' '*shapecorners*.so' '*darkly6*.so' '*breezeenhanced*.so'; do
+            find /usr -name "${pattern}" | grep . || { echo "no plugin matching ${pattern} under /usr" >&2; exit 1; }
+          done
