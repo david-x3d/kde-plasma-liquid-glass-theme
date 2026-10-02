@@ -125,18 +125,36 @@ jobs:
       - name: Install everything (packages, submodules, builds)
         shell: bash
         run: |
-          scripts/install.sh --full-setup --yes --skip-layout --skip-discord-theme --skip-plasma-restart | tee install.log
+          set +e
+          scripts/install.sh --full-setup --yes --skip-layout --skip-discord-theme --skip-plasma-restart 2>&1 | tee install.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          # Exit 2 means some component failed; the next step decides whether that is acceptable.
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ]; then exit "$rc"; fi
       - name: Check component summary
         shell: bash
         run: |
           grep -F "Installed:" install.log
-          if grep -E "^Failed:|^Skipped:" install.log; then
-            echo "A component failed or was skipped on this distro" >&2
+          if grep -E "^Skipped:" install.log; then
+            echo "A component was skipped on this distro" >&2
             exit 1
+          fi
+          failed="$(sed -n 's/^Failed: *//p' install.log)"
+          # Better Blur DX tracks KWin's internal API and can lag a new Plasma release.
+          # Everything else must build; the installer falls back to KWin's own blur.
+          if [ -n "$failed" ] && [ "$failed" != "Better Blur DX" ]; then
+            echo "Unexpected component failures: $failed" >&2
+            exit 1
+          fi
+          if [ -n "$failed" ]; then
+            echo "::warning::Better Blur DX failed to build against this distro's KWin"
           fi
       - name: Check installed plugins
         shell: bash
         run: |
-          for pattern in '*better_blur_dx*.so' '*shapecorners*.so' '*darkly6*.so' '*breezeenhanced*.so'; do
+          patterns="*shapecorners*.so *darkly6*.so *breezeenhanced*.so"
+          if ! grep -q "^Failed:.*Better Blur DX" install.log; then patterns="$patterns *better_blur_dx*.so"; fi
+          for pattern in $patterns; do
             find /usr -name "${pattern}" | grep . || { echo "no plugin matching ${pattern} under /usr" >&2; exit 1; }
           done
+          test -d "$HOME/.local/share/icons/WhiteSur-dark" || { echo "WhiteSur-dark icons missing" >&2; exit 1; }

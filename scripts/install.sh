@@ -720,7 +720,7 @@ package_list() {
       else
         printf ' %s' "kwin"
       fi
-      printf ' %s' "kdecoration kconfig kconfigwidgets kcoreaddons kcolorscheme kcmutils kcrash kglobalaccel kguiaddons kiconthemes kio kirigami knotifications kpackage kservice ki18n kwindowsystem frameworkintegration libepoxy libdrm libxcb wayland"
+      printf ' %s' "kdecoration kconfig kconfigwidgets kcoreaddons kcolorscheme kcmutils kcrash kglobalaccel kguiaddons kiconthemes kio kirigami knotifications kpackage kservice ki18n kwindowsystem frameworkintegration libepoxy libdrm libxcb wayland vulkan-headers"
       ;;
     debian)
       printf '%s' "git cmake extra-cmake-modules build-essential pkg-config gettext qt6-base-dev qt6-base-private-dev qt6-base-dev-tools qt6-declarative-dev qt6-svg-dev qt6-tools-dev"
@@ -767,7 +767,7 @@ filter_available_packages() {
   for pkg in "$@"; do
     case "${manager}" in
       apt-get)
-        candidate="$(apt-cache policy "${pkg}" 2>/dev/null | awk '/Candidate:/ {print $2; exit}')"
+        candidate="$(apt-cache policy "${pkg}" 2>/dev/null | awk '/Candidate:/ {print $2}' || true)"
         if [[ -n "${candidate}" && "${candidate}" != "(none)" ]]; then
           AVAILABLE_PACKAGES+=("${pkg}")
         else
@@ -1504,12 +1504,34 @@ write_user_plugin_env() {
   printf 'Log out and back in so KWin picks up the user-installed effects.\n'
 }
 
+# The WhiteSur installer aborts after the first variant when gtk-update-icon-cache
+# is missing, so WhiteSur-dark never gets installed. The cache is optional for
+# KDE, so provide a no-op stand-in for the duration of the install.
+install_whitesur_icons() {
+  local shim_dir old_path rc=0
+
+  if [[ "${MODE}" == "install" ]] && ! have gtk-update-icon-cache; then
+    note "gtk-update-icon-cache not found; skipping icon cache generation (KDE does not need it)."
+    shim_dir="$(mktemp -d)"
+    printf '#!/bin/sh\nexit 0\n' >"${shim_dir}/gtk-update-icon-cache"
+    chmod +x "${shim_dir}/gtk-update-icon-cache"
+    old_path="${PATH}"
+    PATH="${shim_dir}:${PATH}"
+    run_upstream_installer "WhiteSur icons" "${REPO_ROOT}/WhiteSur-icon-theme" --dest "${DATA_HOME}/icons" --kde-plasma || rc=$?
+    PATH="${old_path}"
+    rm -rf "${shim_dir}"
+    return ${rc}
+  fi
+
+  run_upstream_installer "WhiteSur icons" "${REPO_ROOT}/WhiteSur-icon-theme" --dest "${DATA_HOME}/icons" --kde-plasma
+}
+
 install_components() {
   [[ ${INSTALL_BUILDS} -eq 1 ]] || return 0
 
   printf '\n%sComponent installers%s\n' "${bold}" "${reset}"
   run_component "Layan KDE" run_upstream_installer "Layan KDE" "${REPO_ROOT}/Layan-kde"
-  run_component "WhiteSur icons" run_upstream_installer "WhiteSur icons" "${REPO_ROOT}/WhiteSur-icon-theme" --dest "${DATA_HOME}/icons" --kde-plasma
+  run_component "WhiteSur icons" install_whitesur_icons
 
   if [[ "${DISTRO_FAMILY}" == "nixos" ]]; then
     printf '%-18s %s\n' "KWin/Qt plugins:" "managed by Nix; see the NixOS section below"
@@ -1523,6 +1545,9 @@ install_components() {
     run_component "BreezeEnhanced" cmake_install_project "BreezeEnhanced" "${REPO_ROOT}/BreezeEnhanced" breezeenhanced
   fi
   if component_gate "Better Blur DX" 6.5; then
+    if [[ -n "${PLASMA_VERSION}" ]] && version_ge "${PLASMA_VERSION}" 6.7; then
+      note "Better Blur DX officially supports Plasma 6.5-6.6; building against ${PLASMA_VERSION} may fail (the built-in blur is used if it does)."
+    fi
     if [[ "${SESSION_TYPE}" == "x11" ]]; then
       run_component "Better Blur DX" cmake_install_project "Better Blur DX" "${REPO_ROOT}/Better-Blur-DX" better-blur-dx -DBETTERBLUR_X11=ON
     else
@@ -1897,6 +1922,18 @@ verify_value() {
   fi
 }
 
+# True when two files have identical contents. Minimal containers lack cmp
+# (diffutils), so fall back to diff and then to checksums.
+files_identical() {
+  if have cmp; then
+    cmp -s -- "$1" "$2"
+  elif have diff; then
+    diff -q -- "$1" "$2" >/dev/null 2>&1
+  else
+    [[ "$(cksum <"$1")" == "$(cksum <"$2")" ]]
+  fi
+}
+
 verify_file_match() {
   local source="$1"
   local dest="$2"
@@ -1905,7 +1942,7 @@ verify_file_match() {
     printf 'Verification warning: missing installed file %s\n' "${dest}" >&2
     return 1
   fi
-  if ! cmp -s -- "${source}" "${dest}"; then
+  if ! files_identical "${source}" "${dest}"; then
     printf 'Verification warning: installed file differs from source: %s\n' "${dest}" >&2
     return 1
   fi
