@@ -74,6 +74,28 @@ scripts/install.sh --full-setup --yes
 
 The installer always copies `themes/modified-layan/` into your local Plasma desktop theme directory, backs up replaced files, and prints the backup location when it changes existing files. Before writing KDE settings it backs up `kdeglobals`, `plasmarc`, `kwinrc`, `kwinrulesrc`, `plasma-org.kde.plasma.desktop-appletsrc`, and `plasmashellrc` when they exist. When component submodules are present, it also runs upstream `install.sh` scripts and CMake installs. Source-built KWin/style components install to `/usr` by default because KWin and Qt style plugins are most reliably discovered from the system KDE prefix; use `--user-install` if you want a best-effort `~/.local` build instead. The KDE settings pass writes `kdeglobals`, `plasmarc`, and `kwinrc` with the Plasma style, app style, icons, KWin decoration hint, Better Blur DX tuning, KDE Rounded Corners tuning, and wallpaper, then verifies key config values with `kreadconfig` when available. In `--full-setup`, it also applies a Plasma shell layout through KDE's Plasma scripting D-Bus API: it replaces current panels with a top floating panel containing Kickoff, icon-only tasks, system tray, and clock. It also copies the included Discord/Vesktop CSS theme into common Vencord/Vesktop theme directories.
 
+### 🐧 Supported distributions
+
+The installer reads `/etc/os-release` (including `ID_LIKE`, so derivatives work) and picks the right package manager, package names and install strategy. Use `--distro NAME` to override detection and `scripts/install.sh --print-packages` to see the exact dependency list for your system.
+
+| Family | Examples | What `--full-setup` does |
+| --- | --- | --- |
+| Arch | Arch, EndeavourOS, Manjaro, CachyOS, Garuda | `pacman -S --needed` build deps, builds and installs into `/usr` |
+| Debian / Ubuntu | Debian, Ubuntu, Kubuntu, KDE neon, Mint, Pop!_OS | `apt-get` build deps (unavailable packages are skipped with a warning), builds into `/usr` |
+| Fedora / RHEL | Fedora, Nobara, Rocky, Alma | `dnf install` build deps, builds into `/usr` |
+| openSUSE | Tumbleweed, Leap, Slowroll | `zypper install` build deps, builds into `/usr` |
+| NixOS | NixOS | Never touches `/usr`. Installs Layan, WhiteSur, settings and the Discord theme in your home directory and prints a declarative `configuration.nix` snippet for Darkly, KDE Rounded Corners and Better Blur DX |
+| Immutable / atomic | Fedora Kinoite/Silverblue, Bazzite, SteamOS, Aeon/Kalpa | Skips system packages, installs KWin/Qt plugins under `~/.local` and writes `~/.config/plasma-workspace/env/liquid-glass.sh` so KWin finds them after your next login. Build dependencies must come from a toolbox/distrobox |
+| Alpine, Void, Gentoo, other | | No automated package install; everything else works and the missing dependencies are listed |
+
+Things worth knowing:
+
+- Run it as your normal user, not with `sudo`. It calls `sudo` (or `doas`) itself, only for package and system-prefix steps.
+- Each component builds independently. If one fails (for example BreezeEnhanced and Better Blur DX need Plasma 6.5+), the others still install, the settings fall back to what is actually available (native blur, Darkly or Breeze decorations), and the script exits with status 2 and a summary.
+- KWin effects are tied to the exact KWin version they were built against. Re-run `scripts/install.sh --install` after a Plasma upgrade.
+- On an X11 session the effects are built for KWin X11 automatically; force it with `--x11` or `--wayland`.
+- Builds happen out of tree in `.build/` (change with `--build-root`), so the submodules stay clean.
+
 If you only want the old overlay behavior:
 
 ```bash
@@ -88,6 +110,11 @@ Useful switches:
 | `--init-submodules` | Runs `git submodule update --init --recursive --depth 1`. |
 | `--full-submodule-history` | Uses complete submodule histories instead of shallow submodule checkouts. |
 | `--install-packages` | Installs known build/runtime packages on pacman, apt, dnf or zypper systems. |
+| `--distro NAME` | Overrides distro detection (`arch`, `debian`, `fedora`, `suse`, `nixos`, `alpine`, `void`, `gentoo`). |
+| `--print-packages` | Prints the build dependency list for the detected or chosen distro and exits. |
+| `--x11` / `--wayland` | Chooses which KWin the effects are built for (default: from `XDG_SESSION_TYPE`). |
+| `--build-root DIR` | Out-of-tree CMake build directory (default: `.build/`). |
+| `--allow-root` | Allows running directly as root (for containers). |
 | `--user-install` | Builds source components into `~/.local` instead of `/usr`. |
 | `--install-prefix DIR` | Overrides the CMake install prefix for source components. |
 | `--wallpaper PATH` | Applies a custom wallpaper image. |
@@ -186,7 +213,8 @@ Bright wallpapers can make translucent UI text harder to read.
 | Path | Purpose |
 | --- | --- |
 | `screenshots/` | Desktop and settings screenshots |
-| `scripts/install.sh` | Dry-run capable full KDE rice installer |
+| `scripts/install.sh` | Dry-run capable, multi-distro KDE rice installer |
+| `scripts/validate-installer.sh` | Installer tests (distro detection, dry-runs, overlay install) |
 | `themes/modified-layan/` | Local Layan override files |
 | `themes/discord-theme/` | Modified Discord/Vesktop CSS |
 | `.gitmodules` | Linked upstream theme/tool repositories |
@@ -196,6 +224,7 @@ Bright wallpapers can make translucent UI text harder to read.
 
 GitHub Actions validates the repo on Ubuntu, Windows and macOS for:
 
+- installer syntax, dry-runs for Arch, Debian, Fedora, openSUSE, NixOS and immutable systems
 - `README.md`
 - `LICENSE`
 - `.gitmodules`
