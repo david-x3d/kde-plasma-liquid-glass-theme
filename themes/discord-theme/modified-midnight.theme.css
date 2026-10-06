@@ -142,91 +142,20 @@ body {
     --purple-3: oklch(66% 0.13 310);
     --purple-4: oklch(60% 0.13 310);
     --purple-5: oklch(54% 0.13 310);
-
-    /* Discord internal vars transparent machen */
-    --background-primary: transparent !important;
-    --background-secondary: transparent !important;
-    --background-secondary-alt: transparent !important;
-    --background-tertiary: transparent !important;
-    --background-accent: transparent !important;
-    --background-floating: hsla(220, 15%, 8%, 0.72) !important;
-    --chat-background-default: transparent !important;
-    --channeltextarea-background: hsla(220, 15%, 10%, 0.35) !important;
 }
 
-/* komplette App-Basis transparent */
+/* App-Basis transparent, damit das Vesktop-Glasfenster durchscheint.
+   Nur gezielte Root-Elemente – keine [class*=...]-Wildcards, die treffen
+   Avatare, Badges, Listeneinträge usw. und erzeugen Rahmen/Blur-Artefakte. */
 html,
 body,
-#app-mount,
-[class*="appMount"],
-[class*="app_"],
-[class*="bg_"],
-[class*="layers_"],
-[class*="layer_"],
-[class*="base_"] {
-    background: transparent !important;
-    background-color: transparent !important;
-}
-
-/* Discord Hauptflächen transparent */
-[class*="chat_"],
-[class*="chatContent_"],
-[class*="container_"],
-[class*="content_"],
-[class*="sidebar_"],
-[class*="members_"],
-[class*="membersWrap_"],
-[class*="guilds_"],
-[class*="scroller_"],
-[class*="privateChannels_"],
-[class*="panels_"],
-[class*="standardSidebarView_"],
-[class*="contentRegion_"],
-[class*="sidebarRegion_"] {
-    background: transparent !important;
-    background-color: transparent !important;
-}
-
-/* Glas-Panels */
-[class*="sidebar_"],
-[class*="membersWrap_"],
-[class*="panels_"],
-[class*="container_"][class*="themed_"],
-[class*="channelTextArea_"],
-[class*="chatContent_"] {
-    background-color: hsla(220, 15%, 9%, 0.26) !important;
-    backdrop-filter: blur(var(--blur-amount)) saturate(140%) !important;
-    -webkit-backdrop-filter: blur(var(--blur-amount)) saturate(140%) !important;
-    border: 1px solid hsla(220, 30%, 90%, 0.10) !important;
-}
-
-/* Nachrichtenbereich etwas lesbarer */
-[class*="messageListItem_"],
-[class*="message_"] {
+#app-mount {
     background: transparent !important;
 }
 
-/* Popups/Menus glasig, aber lesbar */
-[class*="menu_"],
-[class*="popout_"],
-[class*="modal_"],
-[class*="root_"][role="dialog"] {
-    background-color: hsla(220, 15%, 8%, 0.78) !important;
-    backdrop-filter: blur(26px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(26px) saturate(150%) !important;
-    border: 1px solid hsla(220, 30%, 90%, 0.14) !important;
-}
-
-/* Chat input */
-[class*="channelTextArea_"],
-[class*="scrollableContainer_"] {
-    background-color: hsla(220, 15%, 10%, 0.35) !important;
-    backdrop-filter: blur(18px) saturate(140%) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
-}
-
-/* kleine schwarze Reste killen */
-[class*="children_"]::after,
-[class*="form_"]::before {
-    display: none !important;
+/* Popups/Menüs lesbar halten */
+[class*="menu_"][role="menu"],
+[role="dialog"] > [class*="root_"] {
+    background: var(--bg-floating) !important;
+    backdrop-filter: blur(var(--blur-amount)) saturate(140%);
 }
